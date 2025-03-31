@@ -1,0 +1,6 @@
+tensorflow>=2.19.0
+catboost>=1.2.7
+pandas>=2.2.3
+numpy>=1.26.4
+scikit-learn>=1.4.0
+matplotlib>=3.9.4
