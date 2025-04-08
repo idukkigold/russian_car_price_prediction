@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, RandomizedSearchCV
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import Ridge
@@ -255,6 +255,30 @@ class StackingEnsemble:
             
         return self
     
+    def tune_hyperparameters(self, X, y):
+        """Tune hyperparameters for base models"""
+        param_distributions = {
+            'rf': {
+                'n_estimators': [100, 200, 300],
+                'max_depth': [10, 15, 20, 25],
+                'min_samples_leaf': [1, 2, 4]
+            },
+            'gb': {
+                'n_estimators': [100, 150, 200],
+                'learning_rate': [0.03, 0.05, 0.07],
+                'max_depth': [6, 8, 10]
+            }
+        }
+        
+        for name, model in self.base_models:
+            if name in param_distributions:
+                search = RandomizedSearchCV(
+                    model, param_distributions[name],
+                    n_iter=10, cv=3, scoring='neg_root_mean_squared_error'
+                )
+                search.fit(X, y)
+                self.base_models[name] = search.best_estimator_
+    
     def predict(self, X):
         X_scaled = self.scaler.transform(X)
         meta_features = np.column_stack([
@@ -338,6 +362,7 @@ def main():
     # Train model
     print("\nTraining ensemble model...")
     model = StackingEnsemble(n_splits=5)
+    model.tune_hyperparameters(X_train, y_train)
     model.fit(X_train, y_train, feature_names=feature_columns)
     
     # Calculate feature importance
